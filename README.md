@@ -1,179 +1,235 @@
-# Locadora 
-Sistema de uma locadora de filmes. O sistema permite a criação de usuários (clientes), logon e logoff de um usuário, listagem de filmes disponíveis, locação de um filme, devolução de um filme, e pesquisa de filme pelo título.
+# locadora-de-filmes-nodejs
 
-## Pré-Requisitos
-Para utilizar o projeto você necessita ter instalado:
-- NodeJS
-- MySql 
 
-## Como instalar
-Navegue até a pasta em que deseja salvar o projeto e realize os seguintes comandos: 
+API REST em nodejs para uma aplicação de locação de filmes:
+    Funcionalidade: 
+        -Novo usuario
+        -Login
+        -recuperar senha
+        -Alugar filme
+        -Devolver Filme
+        -Pesquisar Filme
 
-```sh
-$ git clone https://github.com/Wuirlen/Locadora.git
-$ cd Locadora
-$ npm install
-$ node index.js
-```
 
-## Banco de Dados
-Para a criação do banco de dados, basta acessar a pasta **Database** do projeto e utilizar o script do arquivo **Locadora.sql**.
+* NodeJS
+* Postgre
+* JWT (Token)
+* Express
+* Nodemailer
+* bcryptjs
+* Sequilize(ORM)
+* Morgan
+* Docker
+* Nodemon
 
-Caso seja necessário alterar alguma configuração do banco, como username, password, host, etc, basta alterar os dados no arquivo **.env** que irá ser refletido quando o projeto for inicializado. 
+# Instruções de instalação local:
 
-## Especificação da API
+    #Para instalação local tenha nodejs  Postgre instalado com: user:postgres, password:postgres e database:postgres
+	
+    git clone https://github.com/Wuirlen/Locadora.git
+    cd Locadora
+    npm install (Instalação das bibiliotecas)
+    npm start (Inicia aplicação) ou npm run dev (Para utilizar nodemon)
 
-### Token
-Todas as requisições feitas que **não** sejam para os endpoints:
-- /authentication/login
-- /users/user
+# Instruções para instalação Docker:
 
-devem ser acompanhadas do Token de autenticação adquirido no endpoint de login, este token deve ser enviado no cabeçalho da requisição com a chave **Authorization**.
+    #Para instalação com docker tenha docker-compose instalado.
+	
+    git clone https://github.com/Wuirlen/Locadora.git
+    cd Locadora
+    docker-compose up
+	
+# Autenticação
 
-### Endpoints
-* [GET /movies/movies](#get-moviesmovies)
-* [GET /movies/movies/:titulo](#get-moviesmoviestitulo)
-* [POST /users/user](#post-usersuser)
-* [POST /authentication/login](#post-authenticationlogin)
-* [POST /authentication/logout](#post-authenticationlogout)
-* [POST /rents/rent](#post-rentsrent)
-* [POST /rents/return](#post-rentsreturn)
+A autenticação é feito por token, o front-end é responsável por armazenar o token, e enviá-lo a cada requisição, assim como atualizá-lo com a resposta do servidor. 
+A API foi construída para ser stateless, não armazenando tokens.
+O token expira e pode ser facilmente configurado e gerado um novo token a cada requisição.
+O logoff do usuário é realizado exclusivamente no front-end, eliminando o token da memória.
+O token gerado para recuperação de senha, não pode ser utilizado para login/etc e expira em 24 horas.
 
-### GET /movies/movies
-Retorna os filmes disponiveis com quantidade em estoque maior que zero.
+## Registro do Usuário
 
-Resposta: 
-```
-{
-    "movies": [
-        {
-            "MovieId": 3,
-            "Title": "Star Wars: Episódio V - O Império Contra-Ataca",
-            "Director": "Irvin Kershner",
-            "StockQuantity": 1
-        },
-        {
-            "MovieId": 4,
-            "Title": "Star Wars: Episódio VI - O Retorno de Jedi",
-            "Director": "Richard Marquand",
-            "StockQuantity": 5
-        },...
-    ]
-}
-```
+#### REQUEST
 
-### GET /movies/movies/:titulo
-Retorna os dados relativo ao filme especificado. A pesquisa retorna filmes que contenham o parâmetro informado no titulo para não ser necessário informar o titulo inteiro do filme, portanto, pode retornar mais de um filme.
+POST: [http://localhost:3000/users/register](http://localhost:3000/users/register)
 
-Exemplo de requisição: **/movies/movies/contra-ataca**
+Body:
 
-Resposta: 
-```
-[
-    {
-        "MovieId": 3,
-        "Title": "Star Wars: Episódio V - O Império Contra-Ataca",
-        "Director": "Irvin Kershner",
-        "StockQuantity": 1
-    }
-]
-```
+| Campo         | Descrição     | Obrigatorio |
+| ------------- |-------------| :---------: |
+| email | Email do usuário | X |
+| password | Senha do usuário | X |
+| name  | Nome do usuário | X |
 
-### POST /users/user
-Cria um novo usuário
+#### RESPONSE
 
-Exemplo de requisição: 
-```
-{
-	"Email": "Teste5@teste.com",
-	"Name": "Teste5",
-	"Password": "Teste5"
-}
-```
+Campo **authorization** no header com o token do usuário, deverá ser armazenado pelo front-end para fins de autenticação.
 
-Resposta:
-```
-{
-    "userId": 5,
-    "links": [
-        {
-            "rel": "self",
-            "href": "http://localhost:3000/users/user/5"
-        }
-    ]
-}
-```
 
-### POST /authentication/login
-Realiza a autenticação do usuário, retornando o Token para ser utilizado nas próximas requisições.
+- - - -
 
-Exemplo de requisição:
-```
-{
-	"Email": "Teste5@teste.com",
-	"Password": "Teste5"
-}
-```
+## Login no sistema
 
-Resposta:
-```
-{
-    "auth": true,
-    "user": {
-        "id": 5,
-        "email": "Teste5@teste.com",
-        "nome": "Teste5"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXlsb2FkIjp7IlVzZXJJZCI6NSwiRW1haWwiOiJUZXN0ZTVAdGVzdGUuY29tIiwiTmFtZSI6IlRlc3RlNSIsIlBhc3N3b3JkIjoiJDJiJDEwJFh4OVJMbUhmQTBEOC5FcWNaTzdKNXVCNEpvMUhLV0ZOTktXU0VQS3h2QmxEUk9XcDYyOVRxIn0sImlhdCI6MTU0NDk3MDM3OSwiZXhwIjoxNTQ1MDU2Nzc5fQ.mvKNUUZQhjFcM48NFRChdv7kGEdhsYJ_-b5t1a3uukU"
-}
-```
+#### REQUEST
 
-### POST /authentication/logout
-Realiza o logout do usuário. Para está requisição, deve ser enviado apenas o token no header da requisição e este token será inserido em uma lista de tokens inválidos para todas as próximas requisições.
+POST: [http://localhost:3000/users/authenticate](http://localhost:3000/users/authenticate)
 
-Resposta:
-```
-{
-    "message": "Logout realizado com sucesso!"
-}
-```
+Body:
 
-### POST /rents/rent
-Realiza o aluguel de um filme caso este a locadora possua este filme em estoque.
+| Campo         | Descrição     | Obrigatorio |
+| ------------- |-------------| :---------: |
+| email | Email do usuário | X |
+| password | Senha do usuário | X |
 
-Exemplo de requisição:
-```
-{
-	"UserId": 2,
-	"MovieId": 8
-}
-```
-Resposta:
-```
-{
-    "RentId": 9,
-    "links": [
-        {
-            "rel": "return",
-            "href": "http://localhost:3000/rents/return"
-        }
-    ]
-}
-```
+#### RESPONSE
 
-### POST /rents/return
-Realiza o aluguel de um filme caso este a locadora possua este filme em estoque.
+Campo **authentication** no header com o token do usuário, deverá ser armazenado pelo front-end para fins de autenticação.
 
-Exemplo de requisição:
-```
-{
-	"UserId": 2,
-	"MovieId": 8
-}
-```
-Resposta:
-```
-{
-    "message": "Filme devolvido com sucesso"
-}
-```
+- - - -
+
+## Esqueci a senha
+
+#### REQUEST
+
+POST: [http://localhost:3000/users/forgot_pass](http://localhost:3000/users/forgot_pass)
+
+Body:
+
+| Campo         | Descrição     | Obrigatorio |
+| ------------- |-------------| :---------: |
+| email | Email do usuário | X |
+
+## Reset  de senha
+
+#### REQUEST
+
+POST: [http://localhost:3000/users/reset_pass](http://localhost:3000/users/reset_pass)
+
+Body:
+
+| Campo         | Descrição     | Obrigatorio |
+| ------------- |-------------| :---------: |
+| email | Email do usuário | X |
+
+- - - -
+
+# Listagem de filmes
+
+GET: [http://localhost:3000/movies](http://localhost:3000/movies)
+
+É necessário adicionar o token no header da requisição.
+Retornará apenas os títulos que estão disponíveis para locação, em um array de filmes,
+cada filme possuirá:
+
+| Campo         | Descrição     |
+| ------------- |-------------|
+| id | Id do filme, será utilizado na hora do usuário locar o filme |
+| title | Título do filme |
+| director | Nome do diretor do filme |
+
+
+
+- - - -
+
+# Listagem de filmes disponíveis
+
+GET: [http://localhost:3000/movies/available](http://localhost:3000/movies/available)
+
+É necessário adicionar o token no header da requisição.
+Retornará apenas os títulos que estão disponíveis para locação.
+Cada filme possuirá:
+
+| Campo         | Descrição     |
+| ------------- |-------------|
+| id | Id do filme, será utilizado na hora do usuário locar o filme |
+| title | Título do filme |
+| director | Nome do diretor do filme |
+
+
+
+- - - -
+
+# Busca de filmes por title
+
+GET: [http://localhost:3000/movies/:movieTitle](http://localhost:3000/movies/:movieTitle)
+
+É necessário adicionar o token no header da requisição.
+A busca é limitada para buscas com mais de 3 carácteres para não sobrecarregar o banco de dados.
+
+Retornará os títulos que possuem como subpalavra o parâmetro informado.
+cada filme possuirá:
+
+| Campo         | Descrição     |
+| ------------- |-------------|
+| id | Id do filme, será utilizado na hora do usuário locar o filme |
+| title | Título do filme |
+| director | Nome do diretor do filme |
+
+
+
+- - - -
+
+# Busca de filmes por id
+
+GET: [http://localhost:3000/movies/:titleId](http://localhost:3000/movies/:titleId)
+
+É necessário adicionar o token no header da requisição.
+A busca é limitada para buscas com mais de 3 carácteres para não sobrecarregar o banco de dados.
+
+Retornará o títulos que associado ao id:
+
+| Campo         | Descrição     |
+| ------------- |-------------|
+| id | Id do filme, será utilizado na hora do usuário locar o filme |
+| title | Título do filme |
+| director | Nome do diretor do filme |
+
+
+
+- - - -
+
+# Locação de um filme
+
+POST: [http://localhost:3000/movies/rent](http://localhost:3000/movies/rent)
+
+É necessário adicionar o token no header (ou body) da requisição.
+
+Body:
+
+| Campo         | Descrição     | Obrigatorio |
+| ------------- |-------------| :---------: |
+| movie | ID do filme que o usuário deseja locar | X |
+
+
+O filme será marcado como available = false e vinculado ao usuario
+
+- - - -
+
+# Devolução de um filme
+
+POST: [http://localhost:3000/movies/return](http://localhost:3000/movies/return)
+
+É necessário adicionar o token no header (ou body) da requisição.
+
+Body:
+
+| Campo         | Descrição     | Obrigatorio |
+| ------------- |-------------| :---------: |
+| movie | ID do filme que o usuário deseja devolver | X |
+
+
+O filme será marcado como available = true e desvinculado ao usuario
+
+- - - -
+
+# Status de requisições
+
+200 - Sucesso
+
+400 - Requisição incorreta
+
+401 - Não autorizado (senha incorreta)
+
+403 - Não possui acesso
+
+500 - Erro no servidor
